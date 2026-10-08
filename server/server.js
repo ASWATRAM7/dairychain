@@ -20,12 +20,15 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const mqtt = require('mqtt');
+const crypto = require('crypto');
 require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const accessRequestRoutes = require('./routes/accessRequests');
 const userRoutes = require('./routes/users');
 const batchRoutes = require('./routes/batches');
 const scanRoutes = require('./routes/scans');
+const blockchainRoutes = require('./routes/blockchain');
+const blockchainService = require('./services/blockchainService');
 
 const app = express();
 const server = http.createServer(app);
@@ -42,7 +45,10 @@ app.set('io', io);
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected:', process.env.MONGO_URI))
+  .then(() => {
+    console.log('✅ MongoDB connected:', process.env.MONGO_URI);
+    blockchainService.init();
+  })
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // ─── Middleware ──────────────────────────────────────────────────
@@ -53,6 +59,7 @@ app.use('/api/access-requests', accessRequestRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/scans', scanRoutes);
+app.use('/api/blockchain', blockchainRoutes);
 
 // ─── In-memory readings store (FIFO, max 200) ──────────────────
 const MAX_READINGS = 200;
@@ -241,7 +248,7 @@ mqttClient.on('connect', () => {
   });
 });
 
-mqttClient.on('message', (topic, message) => {
+mqttClient.on('message', async (topic, message) => {
   try {
     const raw = message.toString();
     console.log(`📥 MQTT [${topic}]:`, raw);
@@ -279,6 +286,37 @@ mqttClient.on('message', (topic, message) => {
     // Store in the existing in-memory array
     readings.push(newReading);
     if (readings.length > 200) readings.shift();
+
+    // Compute SHA-256 hash of the canonical JSON
+    const canonical = JSON.stringify({
+      temperature: newReading.temperature,
+      humidity: newReading.humidity,
+      deviceId: newReading.deviceId,
+      timestamp: newReading.timestamp,
+    });
+    const dataHash = '0x' + crypto.createHash('sha256').update(canonical).digest('hex');
+    newReading.dataHash = dataHash;
+
+    // Anchor to blockchain (non-blocking)
+    if (blockchainService.isReady()) {
+      try {
+        const result = await blockchainService.anchorLog(
+          dataHash,
+          newReading.deviceId,
+          newReading.temperature,
+          newReading.humidity || 0
+        );
+        newReading.txHash = result.txHash;
+        newReading.blockNumber = result.blockNumber;
+        newReading.onChain = true;
+        console.log(`⛓️  Anchored on-chain: ${dataHash.slice(0, 12)}... | tx: ${result.txHash.slice(0, 12)}...`);
+      } catch (err) {
+        console.error('⛓️  Anchor failed:', err.message);
+        newReading.onChain = false;
+      }
+    } else {
+      newReading.onChain = false;
+    }
 
     // Broadcast to all React clients via Socket.io
     io.emit('new-temperature', newReading);

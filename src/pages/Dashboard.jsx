@@ -26,6 +26,7 @@ import LivePulse from "../components/LivePulse.jsx";
 import BlockchainSimulator from "../components/BlockchainSimulator.jsx";
 import DataTable from "../components/DataTable.jsx";
 import { useLiveTemperature } from "../hooks/useLiveTemperature";
+import { useBlockchain } from "../hooks/useBlockchain";
 import {
   recentBatches,
   sensorFeed,
@@ -55,6 +56,7 @@ export default function Dashboard() {
     mode,
     limit,
   } = useLiveTemperature();
+  const { ready: blockchainReady } = useBlockchain();
 
   // If live sensor is connected, use real-time hardware data; otherwise provide calibrated simulation telemetry
   const displayHistory = history.length > 0 ? history : milk001TemperatureLog.map((item) => ({
@@ -71,6 +73,18 @@ export default function Dashboard() {
       <PageHeader
         eyebrow={
           <div className="flex items-center gap-3 flex-wrap">
+            <Link
+              to="/ledger"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105 ${
+                blockchainReady
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-neutral-100 text-ink-muted border border-border hover:bg-neutral-200'
+              }`}
+              title="Click to view Blockchain Ledger"
+            >
+              <span className={`h-2 w-2 rounded-full ${blockchainReady ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-400'}`} />
+              {blockchainReady ? '⛓️ Sepolia Connected' : '⛓️ Offline'}
+            </Link>
             <StatusBadge status="safe" label="Blockchain Enabled" filled />
             <span className="text-sm text-ink-muted font-mono">
               Block #18,492
