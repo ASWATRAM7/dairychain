@@ -24,6 +24,8 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const accessRequestRoutes = require('./routes/accessRequests');
 const userRoutes = require('./routes/users');
+const batchRoutes = require('./routes/batches');
+const scanRoutes = require('./routes/scans');
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +36,8 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   },
 });
+
+app.set('io', io);
 
 // Connect to MongoDB
 mongoose
@@ -47,6 +51,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/access-requests', accessRequestRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/batches', batchRoutes);
+app.use('/api/scans', scanRoutes);
 
 // ─── In-memory readings store (FIFO, max 200) ──────────────────
 const MAX_READINGS = 200;
