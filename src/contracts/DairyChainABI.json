@@ -1,0 +1,95 @@
+[
+  {
+    "type": "function",
+    "name": "createBatch",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "batchId", "type": "string" },
+      { "name": "originCooperative", "type": "string" },
+      { "name": "volumeLiters", "type": "uint256" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "logTemperature",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "batchId", "type": "string" },
+      { "name": "celsiusTimesTen", "type": "int256" },
+      { "name": "sensorId", "type": "string" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "verifyBatch",
+    "stateMutability": "view",
+    "inputs": [{ "name": "batchId", "type": "string" }],
+    "outputs": [
+      { "name": "verified", "type": "bool" },
+      { "name": "merkleRoot", "type": "bytes32" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getBatch",
+    "stateMutability": "view",
+    "inputs": [{ "name": "batchId", "type": "string" }],
+    "outputs": [
+      { "name": "originCooperative", "type": "string" },
+      { "name": "volumeLiters", "type": "uint256" },
+      { "name": "avgTempTimesTen", "type": "int256" },
+      { "name": "lastBlock", "type": "uint256" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getTemperatureLogs",
+    "stateMutability": "view",
+    "inputs": [{ "name": "batchId", "type": "string" }],
+    "outputs": [
+      {
+        "name": "logs",
+        "type": "tuple[]",
+        "components": [
+          { "name": "timestamp", "type": "uint256" },
+          { "name": "celsiusTimesTen", "type": "int256" },
+          { "name": "sensorId", "type": "string" }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getViolations",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "batchIds", "type": "string[]" }]
+  },
+  {
+    "type": "event",
+    "name": "BatchCreated",
+    "inputs": [
+      { "name": "batchId", "type": "string", "indexed": true },
+      { "name": "originCooperative", "type": "string", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "TemperatureLogged",
+    "inputs": [
+      { "name": "batchId", "type": "string", "indexed": true },
+      { "name": "celsiusTimesTen", "type": "int256", "indexed": false },
+      { "name": "sensorId", "type": "string", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "ThresholdBreached",
+    "inputs": [
+      { "name": "batchId", "type": "string", "indexed": true },
+      { "name": "celsiusTimesTen", "type": "int256", "indexed": false }
+    ]
+  }
+]
