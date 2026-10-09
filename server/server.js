@@ -28,6 +28,7 @@ const userRoutes = require('./routes/users');
 const batchRoutes = require('./routes/batches');
 const scanRoutes = require('./routes/scans');
 const blockchainRoutes = require('./routes/blockchain');
+const journeyRoutes = require('./routes/journey');
 const blockchainService = require('./services/blockchainService');
 
 const app = express();
@@ -60,6 +61,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/scans', scanRoutes);
 app.use('/api/blockchain', blockchainRoutes);
+app.use('/api/journey', journeyRoutes);
 
 // ─── In-memory readings store (FIFO, max 200) ──────────────────
 const MAX_READINGS = 200;

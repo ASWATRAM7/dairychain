@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
 import { BrowserQRCodeReader } from '@zxing/browser';
@@ -6,9 +7,11 @@ import {
   Search, X, Camera, Keyboard, ScanLine, Plus, AlertCircle,
   CheckCircle, Clock, Award, ShieldCheck, Eye, ChevronDown,
   ChevronUp, Loader2, Download, ExternalLink, RefreshCw,
-  CheckCircle2, AlertTriangle
+  CheckCircle2, AlertTriangle, ArrowRight
 } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge.jsx';
+import JourneyTimeline from '../components/JourneyTimeline.jsx';
+import { useJourney } from '../hooks/useJourney';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const API = 'http://localhost:5000';
@@ -500,6 +503,7 @@ export default function Verify() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState(null);  // batch object
   const [verifyError, setVerifyError] = useState('');
+  const { journey, loading: journeyLoading, error: journeyError } = useJourney(verifyResult?.batchId);
   const [scanHistory, setScanHistory] = useState([]);
   const [tempReadings, setTempReadings] = useState([]);
   const [liveScans, setLiveScans] = useState([]);
@@ -865,6 +869,57 @@ export default function Verify() {
           showQR={showQR}
           onShowQR={() => setShowQR(q => !q)}
         />
+      )}
+
+      {/* ── Batch Journey Section ───────────────────────────── */}
+      {verifyResult && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-serif font-bold text-ink-primary">
+                Batch Journey — Farm to Retail
+              </h3>
+              <p className="text-xs text-ink-secondary">
+                Complete cold chain milestones attested by IoT nodes and Ethereum Sepolia contracts.
+              </p>
+            </div>
+            <Link
+              to={`/batch/${verifyResult.batchId}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy text-white text-xs font-medium hover:bg-navy/90 hover:scale-[1.02] transition-default shadow-xs self-start sm:self-auto"
+            >
+              <span>Open Full Journey Page</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {journeyLoading && !journey && (
+            <div className="bg-card border border-border rounded-2xl p-12 text-center space-y-3">
+              <Loader2 className="w-8 h-8 text-navy animate-spin mx-auto" />
+              <p className="text-xs text-ink-muted">Loading complete batch journey timeline...</p>
+            </div>
+          )}
+
+          {journeyError && !journey && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-xs text-red-600 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Could not load journey: {journeyError}</span>
+            </div>
+          )}
+
+          {journey && (
+            <div className="space-y-4">
+              <JourneyTimeline journey={journey} />
+              <div className="text-center pt-2">
+                <Link
+                  to={`/batch/${verifyResult.batchId}`}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-navy text-navy hover:bg-navy hover:text-white text-sm font-medium transition-default"
+                >
+                  <span>Open Full Journey Page →</span>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── Blockchain Integrity Check ───────────────────────── */}

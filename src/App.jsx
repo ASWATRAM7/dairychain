@@ -107,6 +107,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/batch/:batchId"
+            element={
+              <ProtectedRoute>
+                <BatchDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/violations"
             element={
               <ProtectedRoute>

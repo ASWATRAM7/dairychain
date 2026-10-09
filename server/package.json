@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "seed": "node seed.js",
+    "seed:journey": "node scripts/seedJourney.js",
     "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
