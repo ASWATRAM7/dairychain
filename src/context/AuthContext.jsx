@@ -1,14 +1,15 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { API_BASE } from '../config/api';
 
 /**
  * Authentication context for DairyChain.
  *
- * Connects to the backend auth API (http://localhost:5000/api/auth/login),
+ * Connects to the backend auth API,
  * stores JWT token and user session, and persists them in localStorage.
  */
 
 const STORAGE_KEY = 'dairychain_auth';
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = `${API_BASE}/api/auth`;
 
 const AuthContext = createContext(null);
 
