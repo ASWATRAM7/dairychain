@@ -58,7 +58,18 @@ router.post('/', async (req, res) => {
     });
     await newRequest.save();
 
-    res.status(201).json({ success: true, request: newRequest });
+    res.status(201).json({
+      success: true,
+      request: {
+        _id: newRequest._id,
+        name: newRequest.name,
+        email: newRequest.email,
+        requestedRole: newRequest.requestedRole,
+        reason: newRequest.reason,
+        status: newRequest.status,
+        createdAt: newRequest.createdAt,
+      },
+    });
   } catch (err) {
     console.error('Access request error:', err);
     res.status(500).json({ error: 'Server error: ' + err.message });
@@ -85,13 +96,16 @@ router.post('/:id/approve', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Request already reviewed' });
     }
 
-    const passwordToUse = request.password || 'Welcome@123';
+    if (!request.password) {
+      return res.status(400).json({ error: 'This access request has no password set' });
+    }
 
     // Guard: user with this email already exists
     const existingUser = await User.findOne({ email: request.email });
     if (existingUser) {
       if (request.password) {
         existingUser.password = request.password;
+        existingUser.$locals.passwordIsHashed = true;
         await existingUser.save();
       }
       request.status = 'approved';
@@ -121,10 +135,11 @@ router.post('/:id/approve', requireAdmin, async (req, res) => {
     const newUser = new User({
       name: request.name,
       email: request.email,
-      password: passwordToUse,
+      password: request.password,
       role: request.requestedRole,
       initials,
     });
+    newUser.$locals.passwordIsHashed = true;
     await newUser.save();
 
     request.status = 'approved';
