@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../config/api';
 
 export default function Users() {
   const { token, user: currentUser } = useAuth();
@@ -54,7 +55,7 @@ export default function Users() {
     // 1. Fetch access requests
     setLoadingRequests(true);
     try {
-      const res = await fetch('http://localhost:5000/api/access-requests', { headers });
+      const res = await fetch(`${API_BASE}/api/access-requests`, { headers });
       if (res.status === 403) {
         setPermissionDenied(true);
         return;
@@ -72,7 +73,7 @@ export default function Users() {
     // 2. Fetch users
     setLoadingUsers(true);
     try {
-      const res = await fetch('http://localhost:5000/api/users', { headers });
+      const res = await fetch(`${API_BASE}/api/users`, { headers });
       if (res.status === 403) {
         setPermissionDenied(true);
         return;
@@ -96,7 +97,7 @@ export default function Users() {
     setActionLoadingId(id);
     setErrorBanner('');
     try {
-      const res = await fetch(`http://localhost:5000/api/access-requests/${id}/approve`, {
+      const res = await fetch(`${API_BASE}/api/access-requests/${id}/approve`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
@@ -124,7 +125,7 @@ export default function Users() {
     setActionLoadingId(id);
     setErrorBanner('');
     try {
-      const res = await fetch(`http://localhost:5000/api/access-requests/${id}/reject`, {
+      const res = await fetch(`${API_BASE}/api/access-requests/${id}/reject`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,

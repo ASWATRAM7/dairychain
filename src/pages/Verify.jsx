@@ -13,8 +13,9 @@ import StatusBadge from '../components/StatusBadge.jsx';
 import JourneyTimeline from '../components/JourneyTimeline.jsx';
 import { useJourney } from '../hooks/useJourney';
 import { useAuth } from '../context/AuthContext.jsx';
+import { API_BASE } from '../config/api';
 
-const API = 'http://localhost:5000';
+const API = API_BASE;
 
 // ── small helpers ─────────────────────────────────────────────────────
 function fmt(iso) {
