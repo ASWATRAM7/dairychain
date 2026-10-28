@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
-
-const SOCKET_URL = 'http://localhost:5000';
+import { API_BASE } from '../config/api';
 
 /**
  * Custom hook for real-time temperature data from the DairyChain backend.
@@ -37,7 +36,7 @@ export const useLiveTemperature = () => {
 
   useEffect(() => {
     // ── 1. Fetch historical readings ──────────────────────────
-    fetch(`${SOCKET_URL}/api/temperature/history`)
+    fetch(`${API_BASE}/api/temperature/history`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -58,7 +57,7 @@ export const useLiveTemperature = () => {
       });
 
     // Fetch MQTT status
-    fetch(`${SOCKET_URL}/api/mqtt/status`)
+    fetch(`${API_BASE}/api/mqtt/status`)
       .then((res) => res.json())
       .then((data) => {
         setMqttConnected(data.connected === true);
@@ -67,14 +66,14 @@ export const useLiveTemperature = () => {
 
     // Poll MQTT status every 15 seconds
     const statusInterval = setInterval(() => {
-      fetch(`${SOCKET_URL}/api/mqtt/status`)
+      fetch(`${API_BASE}/api/mqtt/status`)
         .then((res) => res.json())
         .then((data) => setMqttConnected(data.connected === true))
         .catch(() => {});
     }, 15000);
 
     // ── 2. Connect to Socket.io ───────────────────────────────
-    const socket = io(SOCKET_URL, {
+    const socket = io(API_BASE || undefined, {
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;

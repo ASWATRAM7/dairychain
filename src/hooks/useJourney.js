@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
-
-const API_BASE = 'http://localhost:5000';
+import { API_BASE } from '../config/api';
 
 export const useJourney = (batchId) => {
   const [journey, setJourney] = useState(null);
@@ -40,7 +39,7 @@ export const useJourney = (batchId) => {
   useEffect(() => {
     if (!batchId) return;
 
-    const socket = io(API_BASE, { transports: ['websocket', 'polling'] });
+    const socket = io(API_BASE || undefined, { transports: ['websocket', 'polling'] });
     socketRef.current = socket;
 
     socket.on('journey-update', (data) => {

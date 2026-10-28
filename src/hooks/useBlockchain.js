@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-
-const API_BASE = 'http://localhost:5000';
+import { API_BASE } from '../config/api';
 
 export const useBlockchain = () => {
   const [ready, setReady] = useState(false);
