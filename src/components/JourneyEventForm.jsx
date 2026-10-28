@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Plus, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../config/api';
 
 const STAGES = [
   { value: 'farm_collection', label: 'Farm Collection' },
@@ -34,7 +35,7 @@ export default function JourneyEventForm({ batchId, onClose, onSuccess }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/journey/${encodeURIComponent(batchId)}/events`, {
+      const res = await fetch(`${API_BASE}/api/journey/${encodeURIComponent(batchId)}/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

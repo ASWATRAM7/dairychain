@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, X, Loader2, Eye, EyeOff } from 'lucide-react';
+import { API_BASE } from '../config/api';
 
 export default function RequestAccessModal({ isOpen, onClose }) {
   const [name, setName] = useState('');
@@ -57,7 +58,7 @@ export default function RequestAccessModal({ isOpen, onClose }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/access-requests', {
+      const res = await fetch(`${API_BASE}/api/access-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
