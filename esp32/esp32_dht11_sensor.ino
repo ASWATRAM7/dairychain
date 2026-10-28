@@ -79,6 +79,8 @@ const char* password = "YOUR_WIFI_PASSWORD";
 // Replace YOUR_PC_IP with your computer's local IPv4 address
 // Example: "http://192.168.1.42:5000/api/temperature"
 const char* serverUrl = "http://YOUR_PC_IP:5000/api/temperature";
+// For hosted deployments, replace this with the SENSOR_TOKEN from the backend.
+const char* sensorToken = "YOUR_SENSOR_TOKEN";
 
 // ─── Timing ────────────────────────────────────────────────────
 const unsigned long SEND_INTERVAL = 5000;  // 5 seconds between readings
@@ -178,6 +180,7 @@ void sendToServer(float temperature, float humidity) {
   HTTPClient http;
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
+  http.addHeader("Authorization", String("Bearer ") + sensorToken);
 
   // Build JSON payload
   String payload = "{\"temperature\":" + String(temperature, 2) +
