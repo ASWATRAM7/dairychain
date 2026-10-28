@@ -21,6 +21,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const mqtt = require('mqtt');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const accessRequestRoutes = require('./routes/accessRequests');
@@ -41,11 +43,29 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
 });
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean)
+);
+const renderOrigin = process.env.RENDER_EXTERNAL_HOSTNAME
+  ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`
+  : null;
+const allowOrigin = (origin, callback) => {
+  if (
+    !origin ||
+    process.env.NODE_ENV !== 'production' ||
+    origin === renderOrigin ||
+    allowedOrigins.has(origin)
+  ) {
+    return callback(null, true);
+  }
+  return callback(null, false);
+};
 
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowOrigin,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -61,7 +81,7 @@ mongoose
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // ─── Middleware ──────────────────────────────────────────────────
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: allowOrigin, credentials: true }));
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/access-requests', accessRequestRoutes);
@@ -103,6 +123,14 @@ function getLocalIP() {
  * @returns {{ success: boolean, reading: object }}
  */
 app.post('/api/temperature', (req, res) => {
+  if (process.env.SENSOR_TOKEN) {
+    const supplied = Buffer.from(req.get('authorization') || '');
+    const expected = Buffer.from(`Bearer ${process.env.SENSOR_TOKEN}`);
+    if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
+      return res.status(401).json({ success: false, error: 'Invalid sensor token' });
+    }
+  }
+
   const rawTemp =
     req.body.milkTemperature !== undefined
       ? req.body.milkTemperature
@@ -175,6 +203,15 @@ app.get('/api/health', (req, res) => {
   return res.status(200).json({ status: 'ok', readings: readings.length });
 });
 
+// Serve the built Vite app from the same origin as the API in production.
+const frontendDist = path.resolve(__dirname, '..', 'dist');
+if (fs.existsSync(path.join(frontendDist, 'index.html'))) {
+  app.use(express.static(frontendDist));
+  app.get(/^\/(?!api(?:\/|$)).*/, (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 /**
  * GET /api/mqtt/status
  *
@@ -205,7 +242,7 @@ io.on('connection', (socket) => {
 });
 
 // ─── Start Server ───────────────────────────────────────────────
-const PORT = 5000;
+const PORT = Number(process.env.PORT) || 5000;
 const localIP = getLocalIP();
 
 server.listen(PORT, '0.0.0.0', () => {
@@ -228,24 +265,28 @@ server.listen(PORT, '0.0.0.0', () => {
 // MQTT SUBSCRIBER — Bridges ESP32 sensor data into the app
 // ============================================================
 
-const MQTT_BROKER_URL = 'mqtt://broker.emqx.io:1883';
-const PRIMARY_MQTT_TOPIC = 'smartfarm/field1/sensors';
-const MQTT_TOPICS = [
+const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || '';
+const MQTT_TOPICS = (process.env.MQTT_TOPICS || [
   'smartfarm/field1/sensors',
   'dairychain/sensors/temperature',
   'dairychain',
-];
+].join(','))
+  .split(',')
+  .map((topic) => topic.trim())
+  .filter(Boolean);
+const PRIMARY_MQTT_TOPIC = MQTT_TOPICS[0] || null;
 
-console.log('🔄 Connecting to MQTT broker:', MQTT_BROKER_URL);
-
-const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
+const mqttClient = MQTT_BROKER_URL ? mqtt.connect(MQTT_BROKER_URL, {
   clientId: 'dairychain_backend_' + Math.random().toString(16).slice(2, 10),
   clean: true,
   reconnectPeriod: 5000,
   connectTimeout: 10000,
-});
+}) : null;
 
-mqttClient.on('connect', () => {
+if (mqttClient) {
+  console.log('🔄 Connecting to MQTT broker:', MQTT_BROKER_URL);
+
+  mqttClient.on('connect', () => {
   console.log('✅ MQTT connected to broker');
   MQTT_TOPICS.forEach((topic) => {
     mqttClient.subscribe(topic, { qos: 0 }, (err) => {
@@ -360,4 +401,7 @@ mqttClient.on('offline', () => {
 mqttClient.on('reconnect', () => {
   console.log('🔄 MQTT reconnecting...');
 });
+} else {
+  console.log('ℹ️  MQTT disabled; configure MQTT_BROKER_URL to enable a trusted broker.');
+}
 

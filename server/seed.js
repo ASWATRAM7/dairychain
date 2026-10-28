@@ -2,41 +2,40 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const User = require('./models/User');
 
-const seedUsers = [
-  { name: 'Aswat Ram', email: 'admin@dairychain.in', password: 'admin123', role: 'admin', initials: 'AR' },
-  { name: 'Karthik M', email: 'transport@dairychain.in', password: 'transport123', role: 'transport', initials: 'KM' },
-  { name: 'Priya S', email: 'inspector@dairychain.in', password: 'inspector123', role: 'inspector', initials: 'PS' },
-];
-
 async function seed() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('✅ Connected to MongoDB');
+  const name = process.env.BOOTSTRAP_ADMIN_NAME?.trim();
+  const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
 
-    for (const userData of seedUsers) {
-      const existing = await User.findOne({ email: userData.email });
-      if (existing) {
-        console.log(`⚠️  User already exists: ${userData.email}`);
-        continue;
-      }
-      const user = new User(userData);
-      await user.save();
-      console.log(`✅ Created user: ${userData.email} (${userData.role})`);
-    }
-
-    console.log('\n🎉 Seed complete!');
-    console.log('\nDemo credentials:');
-    seedUsers.forEach((u) => {
-      console.log(`  ${u.role.padEnd(10)} | ${u.email.padEnd(28)} | ${u.password}`);
-    });
-
-    console.log('\n💡 Tip: Login as admin and visit /users to manage access requests.');
-
-    process.exit(0);
-  } catch (err) {
-    console.error('❌ Seed error:', err);
-    process.exit(1);
+  if (!process.env.MONGO_URI || !name || !email || !password || password.length < 12) {
+    throw new Error(
+      'Set MONGO_URI, BOOTSTRAP_ADMIN_NAME, BOOTSTRAP_ADMIN_EMAIL, and a BOOTSTRAP_ADMIN_PASSWORD of at least 12 characters.'
+    );
   }
+
+  await mongoose.connect(process.env.MONGO_URI);
+  const existing = await User.findOne({ email });
+  if (existing) {
+    console.log(`Admin account already exists: ${email}`);
+    return;
+  }
+
+  const initials = name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  await new User({ name, email, password, role: 'admin', initials }).save();
+  console.log(`Created admin account: ${email}`);
 }
 
-seed();
+seed()
+  .catch((error) => {
+    console.error('Admin bootstrap failed:', error.message);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await mongoose.disconnect();
+  });
