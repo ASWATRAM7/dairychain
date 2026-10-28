@@ -34,6 +34,14 @@ const blockchainService = require('./services/blockchainService');
 const app = express();
 const server = http.createServer(app);
 
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const io = new Server(server, {
   cors: {
     origin: '*',
